@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSEMAP — Global Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/globe.gl"></script>
+</head>
+<body>
+  <div id="app">
+    <div class="scanline-overlay"></div>
+
+    <!-- TOP BAR -->
+    <header id="top-bar">
+      <div class="logo">
+        <span class="logo-dot"></span>
+        <span class="logo-text">PULSEMAP</span>
+        <span class="logo-live">LIVE</span>
+      </div>
+      <div id="search-container">
+        <span class="search-prefix">&#9655;</span>
+        <input id="search-input" type="text" placeholder="SEARCH COUNTRY..." autocomplete="off" spellcheck="false">
+        <div id="search-dropdown" class="hidden"></div>
+      </div>
+      <div id="category-filters">
+        <button class="filter-btn active" data-category="all">ALL</button>
+        <button class="filter-btn" data-category="politics">POLITICS</button>
+        <button class="filter-btn" data-category="technology">TECH</button>
+        <button class="filter-btn" data-category="economy">ECONOMY</button>
+        <button class="filter-btn" data-category="science">SCIENCE</button>
+        <button class="filter-btn" data-category="sports">SPORTS</button>
+        <button class="filter-btn" data-category="health">HEALTH</button>
+        <button class="filter-btn" data-category="environment">ENVIRO</button>
+      </div>
+      <div id="clock"></div>
+    </header>
+
+    <!-- MAIN AREA -->
+    <div id="main-area">
+
+      <!-- LEFT SIDEBAR TABS -->
+      <nav id="sidebar">
+        <button class="sidebar-tab active" data-panel="wire" title="News Wire">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span>WIRE</span>
+        </button>
+        <button class="sidebar-tab" data-panel="stocks" title="Market Data">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>STOCKS</span>
+        </button>
+        <button class="sidebar-tab" data-panel="tv" title="Live TV">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+          <span>TV</span>
+        </button>
+        <button class="sidebar-tab" data-panel="cameras" title="Live Cameras">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>CAMERAS</span>
+        </button>
+        <button class="sidebar-tab" data-panel="flights" title="Flight Tracker">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+          <span>FLIGHTS</span>
+        </button>
+        <div class="sidebar-spacer"></div>
+        <button class="sidebar-tab" data-panel="breaking" title="Breaking News">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>ALERT</span>
+        </button>
+      </nav>
+
+      <!-- GLOBE -->
+      <div id="globe-container">
+        <div id="globeViz"></div>
+        <div id="globe-loading">
+          <div class="loading-spinner"></div>
+          <span>INITIALIZING GLOBE...</span>
+        </div>
+        <!-- Legend -->
+        <div class="globe-legend">
+          <div class="globe-legend-title">CRISIS ZONES</div>
+          <div class="legend-row"><span class="legend-dot war"></span> War / Active Conflict</div>
+          <div class="legend-row"><span class="legend-dot high"></span> High Activity</div>
+          <div class="legend-row"><span class="legend-dot moderate"></span> Moderate</div>
+          <div class="legend-row"><span class="legend-dot minor"></span> Minor / Monitoring</div>
+          <div class="legend-row"><span class="legend-dot sea"></span> Maritime / Sea Zone</div>
+        </div>
+        <!-- Flight count overlay -->
+        <div id="flight-overlay" class="hidden">
+          <span class="flight-icon">✈</span>
+          <span id="flight-count">0</span> AIRCRAFT TRACKED
+        </div>
+        <!-- Flight detail overlay -->
+        <div id="flight-detail-overlay" class="hidden">
+          <div class="flight-detail-header">
+            <span class="flight-detail-callsign" id="fd-callsign"></span>
+            <button id="fd-close" class="fd-close">×</button>
+          </div>
+          <!-- Aircraft photo -->
+          <div id="fd-photo-section" class="hidden">
+            <img id="fd-photo" alt="Aircraft photo" style="width:100%;height:auto;max-height:140px;object-fit:cover;border-bottom:1px solid var(--border);">
+            <div id="fd-photo-credit" style="font-size:7px;color:var(--text-muted);padding:2px 8px;"></div>
+          </div>
+          <!-- Aircraft details -->
+          <div id="fd-aircraft-info" class="hidden" style="padding:6px 12px;border-bottom:1px solid rgba(0,240,255,0.08);">
+            <div class="fd-row"><span class="fd-label">OPERATOR</span><span class="fd-value" id="fd-operator"></span></div>
+            <div class="fd-row"><span class="fd-label">AIRCRAFT</span><span class="fd-value" id="fd-aircraft-type"></span></div>
+            <div class="fd-row"><span class="fd-label">ICAO HEX</span><span class="fd-value" id="fd-icao"></span></div>
+            <div class="fd-row"><span class="fd-label">REGISTRATION</span><span class="fd-value" id="fd-registration"></span></div>
+          </div>
+          <div class="flight-detail-body">
+            <div class="fd-row"><span class="fd-label">ORIGIN</span><span class="fd-value" id="fd-origin"></span></div>
+            <div class="fd-row"><span class="fd-label">DESTINATION</span><span class="fd-value" id="fd-dest"></span></div>
+            <div class="fd-row"><span class="fd-label">ALTITUDE</span><span class="fd-value" id="fd-alt"></span></div>
+            <div class="fd-row"><span class="fd-label">SPEED</span><span class="fd-value" id="fd-speed"></span></div>
+            <div class="fd-row"><span class="fd-label">HEADING</span><span class="fd-value" id="fd-heading"></span></div>
+            <div class="fd-row"><span class="fd-label">ETA</span><span class="fd-value" id="fd-eta"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FLOATING PANELS -->
+
+      <!-- WIRE PANEL -->
+      <div id="panel-wire" class="floating-panel open" data-panel="wire">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title">WIRE</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="wire-section">
+            <div class="section-label">BREAKING NEWS</div>
+            <div id="breaking-news"></div>
+          </div>
+          <div class="wire-section">
+            <div class="section-label">TOP STORIES</div>
+            <div id="top-stories"></div>
+          </div>
+          <div class="wire-section">
+            <div class="section-label">LIVE FEED</div>
+            <div id="live-feed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STOCKS PANEL -->
+      <div id="panel-stocks" class="floating-panel" data-panel="stocks">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title">STOCKS</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="stock-search-container">
+            <input id="stock-search-input" type="text" placeholder="SEARCH TICKER (e.g. AAPL, TSLA)..." autocomplete="off" spellcheck="false">
+            <div id="stock-search-results" class="hidden"></div>
+          </div>
+          <div class="stocks-tabs">
+            <button class="stock-tab active" data-stock="indices">INDICES</button>
+            <button class="stock-tab" data-stock="movers">MOVERS</button>
+            <button class="stock-tab" data-stock="crypto">CRYPTO</button>
+          </div>
+          <div id="stocks-content"></div>
+        </div>
+      </div>
+
+      <!-- TV PANEL -->
+      <div id="panel-tv" class="floating-panel" data-panel="tv">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title">TV — LIVE STREAMS</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="tv-channels"></div>
+          <div id="tv-player" class="hidden">
+            <iframe id="tv-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAMERAS PANEL -->
+      <div id="panel-cameras" class="floating-panel" data-panel="cameras">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title">CAMERAS</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="cam-filters">
+            <button class="cam-filter active" data-region="all">ALL</button>
+            <button class="cam-filter" data-region="europe">EUROPE</button>
+            <button class="cam-filter" data-region="namerica">N. AMERICA</button>
+            <button class="cam-filter" data-region="asia">ASIA</button>
+            <button class="cam-filter" data-region="other">OTHER</button>
+          </div>
+          <div id="cameras-grid"></div>
+        </div>
+      </div>
+
+      <!-- FLIGHTS PANEL -->
+      <div id="panel-flights" class="floating-panel" data-panel="flights">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title">FLIGHT TRACKER</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="flight-info">
+            <p class="dim-text">Click "LOAD FLIGHTS" to fetch live aircraft positions from OpenSky Network.</p>
+            <button id="load-flights-btn" class="action-btn">LOAD FLIGHTS</button>
+          </div>
+          <div id="flight-list"></div>
+        </div>
+      </div>
+
+      <!-- BREAKING / ALERTS PANEL -->
+      <div id="panel-breaking" class="floating-panel" data-panel="breaking">
+        <div class="panel-titlebar">
+          <span class="panel-dot alert"></span>
+          <span class="panel-title">ALERTS</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="alerts-content"></div>
+        </div>
+      </div>
+
+      <!-- SEA ZONE INTEL PANEL -->
+      <div id="panel-seazone" class="floating-panel sea-intel">
+        <div class="panel-titlebar">
+          <span class="panel-dot alert"></span>
+          <span class="panel-title" id="seazone-panel-title">MARITIME INTEL</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" id="close-seazone-panel" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="seazone-content"></div>
+        </div>
+      </div>
+
+      <!-- NEWS DETAIL PANEL (right side, on country click) -->
+      <div id="news-panel" class="floating-panel news-detail">
+        <div class="panel-titlebar">
+          <span class="panel-dot"></span>
+          <span class="panel-title" id="news-panel-title">COUNTRY NEWS</span>
+          <div class="panel-controls">
+            <button class="panel-minimize" title="Minimize">—</button>
+            <button class="panel-close" id="close-news-panel" title="Close">×</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="news-panel-placeholder">
+            <p class="dim-text">SELECT A COUNTRY ON THE GLOBE<br>TO VIEW REGIONAL NEWS</p>
+          </div>
+          <div id="news-panel-content" class="hidden">
+            <div id="country-header">
+              <span id="country-flag"></span>
+              <div>
+                <h2 id="country-name"></h2>
+                <span id="country-region"></span>
+              </div>
+            </div>
+            <div id="country-stats"></div>
+            <div id="news-count"></div>
+            <div id="news-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM STATS BAR -->
+    <footer id="stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">ARTICLES</span>
+        <span class="stat-value" id="stat-articles">0</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item">
+        <span class="stat-label">REGIONS</span>
+        <span class="stat-value" id="stat-regions">0</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item">
+        <span class="stat-label">BREAKING</span>
+        <span class="stat-value alert" id="stat-breaking">0</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item">
+        <span class="stat-label">SOURCES</span>
+        <span class="stat-value" id="stat-sources">0</span>
+      </div>
+      <div class="stat-sep">|</div>
+      <div class="stat-item">
+        <span class="stat-label">UPDATED</span>
+        <span class="stat-value" id="stat-updated">--:--:--</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="utils.js"></script>
+  <script src="globe.js"></script>
+  <script src="panels.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
